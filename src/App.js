@@ -3,7 +3,17 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LandingPage } from './pages/LandingPage';
 import { AuditActivity } from './pages/AuditActivity';
 import { Dashboard } from './pages/Dashboard';
+import axios from 'axios';
 
+// 1. Set your Base URL
+export const baseURL = "https://friendly-strength-visibility-come.trycloudflare.com/";
+
+// 2. GLOBAL CONFIG: This tells the browser "Always send cookies"
+axios.defaults.withCredentials = true;
+axios.defaults.headers.post['Content-Type'] = 'application/json';
+
+// Optional: Set the baseURL globally so you don't have to type it every time
+axios.defaults.baseURL = baseURL;
 function App() {
   return (
     <Router>

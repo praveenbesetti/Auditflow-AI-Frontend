@@ -1,5 +1,3 @@
-import { BASR_URL } from "./BaseUrl";
-
-//landing page
-export const LOGIN_URL=`${BASR_URL}api/login`;
+import { baseURL } from './BaseUrl';
+export const LOGIN_URL=`${baseURL}api/login`;
 

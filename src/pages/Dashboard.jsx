@@ -6,6 +6,12 @@ import { EmptyState } from '../components/EmptyState';
 import { RepoDrawer } from '../components/RepoDrawer';
 import { AuditTimeline, AuditLog } from '../components/AuditTimeline';
 import { Plus, Search, Filter, GitBranch, Activity } from 'lucide-react';
+import { useEffect } from 'react';
+import axios from 'axios';
+import { baseURL } from '../components/api.js/BaseUrl';
+
+
+
 const MOCK_AUDIT_LOGS = [{
   id: '1',
   commitHash: 'a3f5d8c',
@@ -127,67 +133,7 @@ const MOCK_AUDIT_LOGS = [{
   language: 'Markdown',
   createdAt: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString()
 }];
-const MOCK_REPOS = [{
-  id: '1',
-  name: 'auditflow-core',
-  isPrivate: true,
-  description: 'Core logic for the automated audit engine including heuristic analysis and report generation modules.',
-  canAdmin: true,
-  isConnected: true,
-  stars: 124,
-  forks: 12,
-  language: 'TypeScript'
-}, {
-  id: '2',
-  name: 'frontend-dashboard',
-  isPrivate: false,
-  description: 'React-based dashboard for visualizing audit results and managing team permissions.',
-  canAdmin: true,
-  isConnected: false,
-  stars: 89,
-  forks: 24,
-  language: 'React'
-}, {
-  id: '3',
-  name: 'legacy-api-service',
-  isPrivate: true,
-  description: 'Deprecated REST API service. Maintained for backward compatibility with v1 clients.',
-  canAdmin: false,
-  isConnected: false,
-  stars: 12,
-  forks: 2,
-  language: 'Node.js'
-}, {
-  id: '4',
-  name: 'security-rules-engine',
-  isPrivate: true,
-  description: 'Customizable rule engine for defining security policies and compliance checks.',
-  canAdmin: true,
-  isConnected: true,
-  stars: 256,
-  forks: 45,
-  language: 'Rust'
-}, {
-  id: '5',
-  name: 'docs-site',
-  isPrivate: false,
-  description: 'Public documentation site built with Docusaurus. Contains user guides and API references.',
-  canAdmin: true,
-  isConnected: false,
-  stars: 340,
-  forks: 89,
-  language: 'Markdown'
-}, {
-  id: '6',
-  name: 'payment-gateway-integration',
-  isPrivate: true,
-  description: 'Secure handling of Stripe webhooks and subscription management logic.',
-  canAdmin: false,
-  isConnected: false,
-  stars: 5,
-  forks: 0,
-  language: 'Go'
-}];
+
 const container = {
   hidden: {
     opacity: 0
@@ -203,64 +149,90 @@ export function Dashboard() {
   const [activeTab, setActiveTab] = useState('repos');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRepo, setSelectedRepo] = useState();
+  const [repos, setRepos] = useState([]);
+  const [Branches, setBranches] = useState([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const filteredRepos = MOCK_REPOS.filter(repo => repo.name.toLowerCase().includes(searchQuery.toLowerCase()) || repo.description.toLowerCase().includes(searchQuery.toLowerCase()));
-  const handleRepoClick = (repo) => {
+  const filteredRepos = repos.filter(repo => repo.name.toLowerCase().includes(searchQuery.toLowerCase()) || repo.description.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  const handleRepoClick = async (repo) => {
     setSelectedRepo(repo);
+    const respo= await axios.get(`${baseURL}api/repo-branches/${repo.githubId}/${repo.owner}/${repo.name}`)
+    setBranches(respo.data?.branches);
+    console.log("Branches for selected repo:", respo.data);
     setIsDrawerOpen(true);
   };
+
+  useEffect( () => {
+    const fetchData = async () => {
+    try {
+      const githubId = "135096397"; // Replace with dynamic GitHub ID as needed
+      const response = await axios.get(`${baseURL}api/user-repos/${githubId}`, {
+        withCredentials: true
+      });
+      setRepos(response.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // 2. Execute it
+  fetchData();
+  }, []);
+
+
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
     // Small delay to clear selection after animation
     setTimeout(() => setSelectedRepo(null), 300);
   };
+ 
   return <div className="min-h-screen w-full bg-[#0a0e27] text-slate-200 selection:bg-blue-500/30">
-      {/* Background Gradients */}
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-cyan-600/10 blur-[100px]" />
-      </div>
+    {/* Background Gradients */}
+    <div className="fixed inset-0 z-0 pointer-events-none">
+      <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[100px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-cyan-600/10 blur-[100px]" />
+    </div>
 
-      <Header />
+    <Header />
 
-      <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Tab Navigation */}
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1 backdrop-blur-sm">
-            <button onClick={() => setActiveTab('repos')} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === 'repos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-200'}`}>
-              <GitBranch className="h-4 w-4" />
-              Repositories
-            </button>
-            <button onClick={() => setActiveTab('activity')} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === 'activity' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-200'}`}>
-              <Activity className="h-4 w-4" />
-              Audit Activity
-            </button>
+    <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Tab Navigation */}
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 p-1 backdrop-blur-sm">
+          <button onClick={() => setActiveTab('repos')} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === 'repos' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-200'}`}>
+            <GitBranch className="h-4 w-4" />
+            Repositories
+          </button>
+          <button onClick={() => setActiveTab('activity')} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all ${activeTab === 'activity' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-slate-400 hover:text-slate-200'}`}>
+            <Activity className="h-4 w-4" />
+            Audit Activity
+          </button>
+        </div>
+        {activeTab === 'repos' && <button className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95">
+          <Plus className="h-4 w-4" />
+          Add Repository
+        </button>}
+      </div>{' '}
+      {activeTab === 'repos' ? <>
+        {/* Search and Filter Bar */}
+        <div className="mb-8 flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input type="text" placeholder="Filter repositories..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-10 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-0" />
           </div>
-          {activeTab === 'repos' && <button className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-95">
-              <Plus className="h-4 w-4" />
-              Add Repository
-            </button>}
-        </div>{' '}
-        {activeTab === 'repos' ? <>
-            {/* Search and Filter Bar */}
-            <div className="mb-8 flex items-center gap-4 rounded-xl border border-white/10 bg-white/5 p-2 backdrop-blur-sm">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input type="text" placeholder="Filter repositories..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="h-10 w-full rounded-lg bg-transparent pl-10 pr-4 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-0" />
-              </div>
-              <div className="h-6 w-px bg-white/10" />
-              <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
-                <Filter className="h-4 w-4" />
-                Filters
-              </button>
-            </div>
+          <div className="h-6 w-px bg-white/10" />
+          <button className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-colors">
+            <Filter className="h-4 w-4" />
+            Filters
+          </button>
+        </div>
 
-            {filteredRepos.length > 0 ? <motion.div variants={container} initial="hidden" animate="visible" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {filteredRepos.map(repo => <RepoCard key={repo.id} repo={repo} onClick={handleRepoClick} />)}
-              </motion.div> : <EmptyState />}
-          </> : <AuditTimeline logs={MOCK_AUDIT_LOGS} />}
-      </main>
+        {filteredRepos.length > 0 ? <motion.div variants={container} initial="hidden" animate="visible" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredRepos.map(repo => <RepoCard key={repo.id} repo={repo} onClick={handleRepoClick} />)}
+        </motion.div> : <EmptyState />}
+      </> : <AuditTimeline logs={MOCK_AUDIT_LOGS} />}
+    </main>
 
-      <RepoDrawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} repo={selectedRepo} />
-    </div>;
+    <RepoDrawer isOpen={isDrawerOpen} onClose={handleCloseDrawer} repo={selectedRepo} Branches={Branches} />
+  </div>;
 }

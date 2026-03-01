@@ -10,7 +10,7 @@ export function LandingPage() {
 
 
   const handleLogin = () => {
-    window.location.href = LOGIN_URL;
+   window.location.href = LOGIN_URL;
   };
 
 

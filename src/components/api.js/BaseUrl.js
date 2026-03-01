@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export const baseURL = "https://wonderful-friendly-artists-bias.trycloudflare.com/";
+export const baseURL = "https://certified-abu-trade-diff.trycloudflare.com/";
 
 axios.defaults.withCredentials = true;
 

@@ -192,7 +192,7 @@ export function Dashboard() {
       <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] rounded-full bg-cyan-600/10 blur-[100px]" />
     </div>
 
-    <Header />
+    <Header  />
 
     <main className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Tab Navigation */}

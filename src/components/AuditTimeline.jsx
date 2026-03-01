@@ -1,6 +1,8 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { ExternalLink, FileText, GitCommit, Clock, AlertCircle, CheckCircle2, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ExternalLink, FileText, GitCommit, Clock, AlertCircle, CheckCircle2, AlertTriangle, X } from 'lucide-react';
+import axios from 'axios';
+import { baseURL } from './api.js/BaseUrl';
 
 const statusConfig = {
   REJECTED: {
@@ -35,47 +37,71 @@ const statusConfig = {
   }
 };
 
-const container = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 }
-  }
-};
+export function AuditTimeline(log) {
+  const [logs, setLogs] = useState([]);
+  const [selectedAudit, setSelectedAudit] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-const item = {
-  hidden: { opacity: 0, x: -20 },
-  visible: { opacity: 1, x: 0 }
-};
+  // 1. Fetch Logs and update State
+  useEffect(() => {
+    const fetchAuditLogs = async () => {
+      try {
+        const response = await axios.get(`${baseURL}api/audit-logs`, {
+          params: { owner: "praveenbesetti" }
+        });
+        // Set the logs to response.data.data based on your API structure
+        setLogs(response.data.data); // Append new logs to existing ones
+      } catch (error) {
+        console.error("Error fetching audit logs:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAuditLogs();
+  }, []);
 
-export function AuditTimeline({ logs }) {
+  // 2. Secure Redirect Handler
+  const handleViewOnGithub = (log) => {
+    try {
+      // Fallback to 'praveenbesetti' if log.owner is missing
+      const owner = log.owner || "praveenbesetti";
+      const repo = log.repoName;
+      const hash = log.commitHash;
+
+      if (!repo || !hash) {
+        console.error("Missing repo or hash for redirect");
+        return;
+      }
+
+      const githubUrl = `https://github.com/${owner}/${repo}/commit/${hash}`;
+
+      // Open in new tab
+      window.open(githubUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error("Error redirecting to GitHub:", error);
+    }
+  };
+
+  if (loading) return <div className="text-center p-10 text-slate-400">Loading security feed...</div>;
+
   if (logs.length === 0) {
     return (
       <div className="flex min-h-[300px] flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-sm">
-        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10">
-          <GitCommit className="h-8 w-8 text-slate-500" />
-        </div>
-        <h3 className="mb-2 text-lg font-semibold text-slate-200">
-          No Audit Activity Yet
-        </h3>
-        <p className="max-w-sm text-sm text-slate-400">
-          Audit logs will appear here once you enable AI security monitoring on
-          your repositories.
-        </p>
+        <GitCommit className="h-8 w-8 text-slate-500 mb-4" />
+        <h3 className="text-lg font-semibold text-slate-200">No Audit Activity Yet</h3>
       </div>
     );
   }
 
   return (
     <div className="w-full">
+      {/* Header */}
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-emerald-400 bg-clip-text text-transparent">
             Live Security Feed
           </h2>
-          <p className="mt-1 text-sm text-slate-400">
-            Real-time audit results from your monitored repositories
-          </p>
+          <p className="mt-1 text-sm text-slate-400">Real-time audit results</p>
         </div>
         <div className="flex items-center gap-2 text-xs text-slate-500">
           <Clock className="h-4 w-4" />
@@ -83,90 +109,120 @@ export function AuditTimeline({ logs }) {
         </div>
       </div>
 
-      <motion.div
-        variants={container}
-        initial="hidden"
-        animate="visible"
-        className="relative ml-4 space-y-8 border-l-2 border-slate-800/50"
-      >
+      {/* Timeline Feed */}
+      <motion.div initial="hidden" animate="visible" className="relative ml-4 space-y-8 border-l-2 border-slate-800/50">
         {logs.map((log) => {
-          const config = statusConfig[log.status];
+          const config = statusConfig[log.status] || statusConfig.PASSED;
           const StatusIcon = config.icon;
 
           return (
-            <motion.div key={log.id} variants={item} className="relative pl-8">
-              {/* Status Dot */}
-              <span
-                className={`absolute -left-[9px] top-1 flex h-4 w-4 items-center justify-center rounded-full border-4 border-[#0a0e27] ${config.color} ${config.shadow} ${
-                  config.pulse ? 'animate-pulsey' : ''
-                }`}
-              />
+            <motion.div key={log._id} className="relative pl-8">
+              <span className={`absolute -left-[9px] top-1 h-4 w-4 rounded-full border-4 border-[#0a0e27] ${config.color} ${config.shadow} ${config.pulse ? 'animate-pulse' : ''}`} />
 
-              {/* Event Card */}
-              <div className="group rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md transition-all hover:border-blue-500/30 hover:bg-white/8">
-                {/* Header */}
+              <div className="group rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md hover:border-blue-500/30">
                 <div className="mb-3 flex items-start justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1 flex flex-col items-start text-left">
+                    {/* Row 1: Hash and Owner */}
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-xs text-blue-400">
                         #{log.commitHash.substring(0, 7)}
                       </span>
                       <span className="text-xs text-slate-600">•</span>
-                      <span className="text-xs text-slate-500">@{log.author}</span>
+                      <span className="text-xs text-slate-500">@{log.owner || 'praveen'}</span>
                     </div>
-                    <h3 className="font-medium text-start text-slate-200 group-hover:text-white transition-colors">
+
+                    {/* Row 2: Repo Name (Now directly below the hash) */}
+                    <h3 className="text-base font-semibold text-slate-200 group-hover:text-white transition-colors">
                       {log.repoName}
                     </h3>
-                    <p className="mt-1 text-sm text-start text-slate-400 font-mono">
-                      {log.commitMessage}
+
+                    {/* Row 3: Filename */}
+                    <p className="mt-0.5 text-xs font-mono text-slate-500">
+                      {log.filename}
                     </p>
                   </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span className="text-xs uppercase tracking-widest text-slate-500">
-                      {new Date(log.createdAt).toLocaleTimeString('en-US', {
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                    <div
-                      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${config.bgColor} ${config.textColor} ring-1 ring-inset ${config.borderColor}`}
-                    >
-                      <StatusIcon className="h-3 w-3" />
-                      {config.label}
-                    </div>
+                  <div className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${config.bgColor} ${config.textColor} ring-1 ring-inset ${config.borderColor}`}>
+                    <StatusIcon className="h-3 w-3" />
+                    {config.label}
                   </div>
                 </div>
 
-                {/* Details */}
+                {/* Summary Snippet */}
                 <div className="mb-4 rounded-lg bg-black/20 p-3 border border-white/5">
-                  <p className="line-clamp-2 text-sm italic leading-relaxed text-slate-400">
-                    "{log.details}"
+                  <p className="line-clamp-2 text-sm italic text-slate-400">
+                    {log.summary?.substring(0, 150)}...
                   </p>
                 </div>
 
-                {/* Footer */}
+                {/* Footer Buttons */}
                 <div className="flex items-center justify-between">
                   <div className="flex gap-2">
                     <button
-                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${config.bgColor} ${config.textColor} border ${config.borderColor} hover:bg-blue-600 hover:text-white hover:border-blue-600`}
+                      onClick={() => setSelectedAudit(log)}
+                      className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${config.bgColor} ${config.textColor} border ${config.borderColor} hover:bg-blue-600 hover:text-white`}
                     >
-                      <FileText className="h-3 w-3" />
-                      Full Report
+                      <FileText className="h-3 w-3" /> Full Report
                     </button>
-                    <button className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 transition-all hover:bg-slate-700 hover:text-white">
-                      <ExternalLink className="h-3 w-3" />
-                      View on GitHub
+                    <button
+                      onClick={() => handleViewOnGithub(log)}
+                      className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300 hover:bg-slate-700"
+                    >
+                      <ExternalLink className="h-3 w-3" /> GitHub
                     </button>
                   </div>
-                  <span className="rounded-full bg-white/5 px-2.5 py-1 text-xs font-medium text-slate-400 ring-1 ring-white/10">
-                    {log.language}
-                  </span>
+                  <span className="text-[10px] text-slate-500">{new Date(log.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             </motion.div>
           );
         })}
       </motion.div>
+
+      {/* --- Full Report Modal --- */}
+      <AnimatePresence>
+        {selectedAudit && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }}
+              className="w-full max-w-4xl max-h-[90vh] overflow-hidden rounded-2xl border border-white/10 bg-[#0f172a] shadow-2xl flex flex-col"
+            >
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-slate-900/50">
+                <div>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    Audit Analysis: <span className="text-blue-400">{selectedAudit.filename}</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 font-mono mt-1">{selectedAudit.commitHash}</p>
+                </div>
+                <button onClick={() => setSelectedAudit(null)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                  <X className="h-5 w-5 text-slate-400" />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto space-y-6">
+                {/* Findings Section */}
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Security Findings</h4>
+                  <div className="p-4 rounded-xl bg-slate-800/30 border border-white/5 text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                    {selectedAudit.summary}
+                  </div>
+                </div>
+
+                {/* Code Fix Section */}
+                {selectedAudit.suggestedFix && (
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-emerald-500 mb-3">Recommended Fix (Diff)</h4>
+                    <div className="rounded-xl bg-black/50 border border-emerald-500/20 overflow-hidden">
+                      <pre className="p-4 text-xs font-mono leading-6 text-emerald-300 overflow-x-auto whitespace-pre">
+                        {selectedAudit.suggestedFix}
+                      </pre>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

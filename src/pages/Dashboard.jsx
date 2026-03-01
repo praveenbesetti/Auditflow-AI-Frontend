@@ -182,7 +182,6 @@ export function Dashboard() {
 
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
-    // Small delay to clear selection after animation
     setTimeout(() => setSelectedRepo(null), 300);
   };
  

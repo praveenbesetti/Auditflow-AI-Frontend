@@ -13,16 +13,27 @@ export function RepoDrawer({ isOpen, onClose, repo, Branches }) {
   const [webhookActive, setWebhookActive] = useState(false);
 
   // Sync state when drawer opens or repo changes
-  useEffect(() => {
-    if (repo && isOpen) {
-      const activeState = !!repo.isAuditEnabled;
-      setAiGuardEnabled(activeState);
-      setWebhookActive(activeState);
+  // Sync state when drawer opens or repo changes
+useEffect(() => {
+  if (repo && isOpen) {
+    const activeState = !!repo.isAuditEnabled;
+    setAiGuardEnabled(activeState);
+    setWebhookActive(activeState);
+    
+    // 1. Check if we have the list of branches with 'status'
+    if (Branches && Branches.length > 0) {
+      // 2. Filter branches where status is true and get their names
+      const preSelected = Branches
+        .filter(b => b.status === true)
+        .map(b => b.name);
       
-      // Bind active branches from repo data if they exist, otherwise empty array
+      setSelectedBranches(preSelected);
+    } else {
+      // Fallback to existing logic
       setSelectedBranches(repo.selectedBranches || []);
     }
-  }, [repo, isOpen]);
+  }
+}, [repo, isOpen, Branches]); // Added Branches to dependency array
 
   if (!repo) return null;
 

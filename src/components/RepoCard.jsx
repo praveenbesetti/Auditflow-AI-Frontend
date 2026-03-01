@@ -54,7 +54,7 @@ export function RepoCard({ repo, onClick }) {
           </div>
 
           {/* Status Badge */}
-          {repo.isConnected ? (
+          {repo.isAuditEnabled ? (
             <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400 ring-1 ring-inset ring-emerald-500/20">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -82,7 +82,7 @@ export function RepoCard({ repo, onClick }) {
             <GitFork className="h-3.5 w-3.5" />
             {repo.forks}
           </div>
-          <div className="text-slate-600">Updated 2d ago</div>
+          <div className="text-slate-600">Updated {repo.getLatestUpdate} </div>
         </div>
       </div>
 

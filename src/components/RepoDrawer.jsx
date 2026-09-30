@@ -5,7 +5,7 @@ import { ToggleSwitch } from './ToggleSwitch';
 import axios from 'axios';
 import { baseURL } from './api.js/BaseUrl';
 
-export function RepoDrawer({ isOpen, onClose, repo, Branches }) {
+export function RepoDrawer({ isOpen, onClose, repo, Branches = [], onSaved }) {
   // --- State Management ---
   const [aiGuardEnabled, setAiGuardEnabled] = useState(false);
   const [selectedBranches, setSelectedBranches] = useState([]);
@@ -70,6 +70,7 @@ useEffect(() => {
 
       console.log("Success:", res.data);
       setWebhookActive(aiGuardEnabled);
+      onSaved?.(aiGuardEnabled, aiGuardEnabled ? selectedBranches : []);
       onClose(); 
     } catch (err) {
       console.error("Operation failed:", err);
@@ -81,8 +82,9 @@ useEffect(() => {
   };
 
   // --- Validation Logic ---
+  const savedBranches = Branches.filter(branch => branch.status).map(branch => branch.name);
   const hasChanges = aiGuardEnabled !== repo.isAuditEnabled || 
-                     JSON.stringify([...selectedBranches].sort()) !== JSON.stringify([...(repo.selectedBranches || [])].sort());
+                     JSON.stringify([...selectedBranches].sort()) !== JSON.stringify([...(repo.selectedBranches || savedBranches)].sort());
 
   const isButtonDisabled = 
     isProcessing || 

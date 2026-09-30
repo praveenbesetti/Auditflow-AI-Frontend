@@ -3,10 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { LandingPage } from './pages/LandingPage';
 import { AuditActivity } from './pages/AuditActivity';
 import { Dashboard } from './pages/Dashboard';
+import { FeaturesPage } from './pages/FeaturesPage';
+import { DocumentationPage } from './pages/DocumentationPage';
+import { PricingPage } from './pages/PricingPage';
 import axios from 'axios';
 
-// 1. Set your Base URL
-export const baseURL = "https://friendly-strength-visibility-come.trycloudflare.com/";
+import { baseURL } from './components/api.js/BaseUrl';
 
 // 2. GLOBAL CONFIG: This tells the browser "Always send cookies"
 axios.defaults.withCredentials = true;
@@ -22,6 +24,9 @@ function App() {
         {/* If you have a Navbar, place it here so it shows on all pages */}
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/docs" element={<DocumentationPage />} />
           <Route path="/audit-activity" element={<AuditActivity />} />
           <Route path="/dashboard" element={<Dashboard />} /> 
           

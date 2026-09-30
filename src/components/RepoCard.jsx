@@ -1,8 +1,10 @@
 import React from 'react';
-import { GitFork, Lock, Shield, Star, Unlock, Code2, Settings } from 'lucide-react';
+import { Check, GitFork, Lock, Shield, Star, Unlock, Code2, Settings } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function RepoCard({ repo, onClick }) {
+  const selectedBranches = Array.isArray(repo.selectedBranches) ? repo.selectedBranches : [];
+
   return (
     <motion.article
       variants={{
@@ -68,6 +70,29 @@ export function RepoCard({ repo, onClick }) {
             </div>
           )}
         </div>
+
+        {repo.isAuditEnabled && (
+          <div className="mb-4 flex flex-wrap gap-1.5" aria-label="Monitored branches">
+            {selectedBranches.slice(0, 3).map((branch) => (
+              <span
+                key={branch}
+                title={branch}
+                className="inline-flex max-w-40 items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[11px] text-emerald-300"
+              >
+                <Check className="h-3 w-3 shrink-0" />
+                <span className="truncate">{branch}</span>
+              </span>
+            ))}
+            {selectedBranches.length > 3 && (
+              <span className="inline-flex items-center rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-400">
+                +{selectedBranches.length - 3} more
+              </span>
+            )}
+            {selectedBranches.length === 0 && (
+              <span className="text-xs text-amber-300">No monitored branches</span>
+            )}
+          </div>
+        )}
 
         <p className="mb-4 line-clamp-2 text-sm leading-relaxed text-slate-400 group-hover:text-slate-300 transition-colors">
           {repo.description}

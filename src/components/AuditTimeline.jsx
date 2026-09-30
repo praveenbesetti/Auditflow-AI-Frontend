@@ -37,7 +37,7 @@ const statusConfig = {
   }
 };
 
-export function AuditTimeline(log) {
+export function AuditTimeline({ repos = [], repoId = '', onRepoChange }) {
   const [logs, setLogs] = useState([]);
   const [selectedAudit, setSelectedAudit] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -47,10 +47,10 @@ export function AuditTimeline(log) {
     const fetchAuditLogs = async () => {
       try {
         const response = await axios.get(`${baseURL}api/audit-logs`, {
-          params: { owner: "praveenbesetti" }
+          params: repoId ? { repoId } : {}
         });
         // Set the logs to response.data.data based on your API structure
-        setLogs(response.data.data); // Append new logs to existing ones
+        setLogs(response.data.data || []);
       } catch (error) {
         console.error("Error fetching audit logs:", error);
       } finally {
@@ -58,7 +58,7 @@ export function AuditTimeline(log) {
       }
     };
     fetchAuditLogs();
-  }, []);
+  }, [repoId]);
 
   // 2. Secure Redirect Handler
   const handleViewOnGithub = (log) => {
@@ -103,9 +103,22 @@ export function AuditTimeline(log) {
           </h2>
           <p className="mt-1 text-sm text-slate-400">Real-time audit results</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <Clock className="h-4 w-4" />
-          Last updated: {new Date().toLocaleTimeString()}
+        <div className="flex items-center gap-3">
+          <select
+            aria-label="Filter audit history by repository"
+            value={repoId}
+            onChange={(event) => onRepoChange?.(event.target.value)}
+            className="max-w-56 rounded-lg border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200"
+          >
+            <option value="">All repositories</option>
+            {repos.map((repo) => (
+              <option key={repo.id} value={repo.id}>{repo.owner}/{repo.name}</option>
+            ))}
+          </select>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <Clock className="h-4 w-4" />
+            Last updated: {new Date().toLocaleTimeString()}
+          </div>
         </div>
       </div>
 
@@ -116,7 +129,7 @@ export function AuditTimeline(log) {
           const StatusIcon = config.icon;
 
           return (
-            <motion.div key={log._id} className="relative pl-8">
+            <motion.div key={log.id} className="relative pl-8">
               <span className={`absolute -left-[9px] top-1 h-4 w-4 rounded-full border-4 border-[#0a0e27] ${config.color} ${config.shadow} ${config.pulse ? 'animate-pulse' : ''}`} />
 
               <div className="group rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-md hover:border-blue-500/30">
@@ -125,7 +138,7 @@ export function AuditTimeline(log) {
                     {/* Row 1: Hash and Owner */}
                     <div className="flex items-center gap-2 mb-1">
                       <span className="font-mono text-xs text-blue-400">
-                        #{log.commitHash.substring(0, 7)}
+                        #{(log.commitHash || '').substring(0, 7)}
                       </span>
                       <span className="text-xs text-slate-600">•</span>
                       <span className="text-xs text-slate-500">@{log.owner || 'praveen'}</span>
